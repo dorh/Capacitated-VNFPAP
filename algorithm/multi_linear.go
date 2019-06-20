@@ -78,7 +78,6 @@ func (mlc *multiLinearCalculation) calculateMultiLinearValue(g types.Graph, mult
 	server int, color int) int64 {
 	sum := int64(0)
 	numOfIterations := len(g.Servers())*g.MaxColor()
-	numOfIterations *= numOfIterations
 	for i:=0; i< numOfIterations; i++{
 		sum += mlc.calculateOneTime(g, multi_linear_extension, server, color)
 	}

@@ -92,7 +92,7 @@ func runSettings(s setting) {
 	random := algorithm.NewRandom()
 	smartRandom := algorithm.NewSmartRandom()
 	greedy := algorithm.NewGreedy()
-	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.clients*s.colors)
+	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.colors*s.servers*s.colors)
 	lpImpl := algorithm.NewCapacitatedVNFapLP()
 
 	radius_client_loss := s.clients*s.servers-len(graphs[0].Clients())
