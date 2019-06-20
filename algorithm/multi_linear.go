@@ -26,12 +26,14 @@ func (mlc *multiLinearCalculation ) Run(g types.Graph) int64 {
 	}
 
 	for i:= 0; i<mlc.iterations; i++{
+
 		currentIterationBest := map[int]int{}
-		for color := 0; color<g.MaxColor();color++{
-			currentIterationBest[color] = mlc.findCurrentServerToColor(g, multi_linear_extension, color)
+		for server := range g.Servers(){
+			currentIterationBest[server] = mlc.findCurrentColorToServer(g, multi_linear_extension, server)
 		}
 
-		for color, server:= range currentIterationBest{
+
+		for server,color := range currentIterationBest{
 			multi_linear_extension[server][color] += addedValue
 		}
 	}
@@ -57,19 +59,19 @@ func randomPlacementFunction(multi_linear_extension [][]float64) map[int]int {
 
 	return placementFunction
 }
-func (mlc *multiLinearCalculation) findCurrentServerToColor(g types.Graph, multi_linear_extension [][]float64,
-	color int) int {
+func (mlc *multiLinearCalculation) findCurrentColorToServer(g types.Graph, multi_linear_extension [][]float64,
+	server int) int {
 	max := int64(-1)
-	maxServer := -1
-	for server_index := range g.Servers(){
-		currentValue := mlc.calculateMultiLinearValue(g, multi_linear_extension, server_index, color)
+	maxColor := -1
+	for color := 0; color < g.MaxColor(); color++{
+		currentValue := mlc.calculateMultiLinearValue(g, multi_linear_extension, server, color)
 		if currentValue > max{
 			max = currentValue
-			maxServer = server_index
+			maxColor = color
 		}
 	}
 
-	return maxServer
+	return maxColor
 }
 
 func (mlc *multiLinearCalculation) calculateMultiLinearValue(g types.Graph, multi_linear_extension [][]float64,
@@ -86,19 +88,25 @@ func (mlc *multiLinearCalculation) calculateMultiLinearValue(g types.Graph, mult
 func (mlc *multiLinearCalculation) calculateOneTime(g types.Graph, multi_linear_extension [][]float64, server int,
 	color int) int64 {
 	addedValue := 1.0/float64(mlc.iterations)
-	placementFunction := map[int]int{}
-	for i:= range g.Servers(){
-		prob := multi_linear_extension[i][color]
-		if i == server {
-			prob += addedValue
-		}
-		if rand.Float64() < prob{
-			placementFunction[i] = color
-		} else {
-			placementFunction[i] = -1
-		}
-	}
 
-	return impl.CalculateColorValue(g, placementFunction, color)
+	sum := (int64)(0)
+	for c := 0; c<g.MaxColor(); c++ {
+		placementFunction := map[int]int{}
+		for i:= range g.Servers(){
+			prob := multi_linear_extension[i][c]
+			if i == server && c == color{
+				prob += addedValue
+			}
+			if rand.Float64() < prob{
+				placementFunction[i] = c
+			} else {
+				placementFunction[i] = -1
+			}
+		}
+
+		sum += impl.CalculateColorValue(g, placementFunction, c)
+
+	}
+	return sum
 
 }
