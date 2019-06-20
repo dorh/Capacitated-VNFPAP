@@ -42,7 +42,7 @@ func Create(servers int, clients int, colors int, connections int, radius bool, 
 	radiusGraphServers := radiusGraph.Servers()
 	vnfapGraphEdges := createEdges(radiusGraphClients, radiusGraphServers, connections)
 	vnfapGraph = impl.NewGraph(vnfapGraphEdges)
-	return []types.Graph{vnfapGraph, radiusGraph}
+	return []types.Graph{radiusGraph}
 }
 
 func get_servers(servers int, serverCapacity int) ([]types.Server, []float64) {
