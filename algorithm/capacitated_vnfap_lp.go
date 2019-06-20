@@ -13,18 +13,35 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/yourbasic/graph"
 )
 
 const (
 	_LP_DIRECTORY         = "lp_files"
 	_LP_COMMAND           = "C:\\Users\\dorharr\\lp_solve\\lp_solve.exe"
+	_OBJECTIVE_VALUE_LINE = 1
+	_VARIABLE_START_LINE  = 5
 )
 
 func NewCapacitatedVNFapLP() Algorithm {
 	return &capacitatedVnfapLP{}
 }
 
+func NewRoundCapacitatedVNFapLP() Algorithm {
+	return &roundCapacitatedVnfpapLp {}
+}
+
 type capacitatedVnfapLP struct {}
+
+type roundCapacitatedVnfpapLp struct {
+	capacitatedVnfapLP
+}
+
+func (v *roundCapacitatedVnfpapLp) Run(g types.Graph) int64 {
+	lpFilename := v.createLpFile(g)
+	variables := v.runLp(lpFilename)
+	return v.createSolutionFromVariables(g, variables)
+}
 
 func (v *capacitatedVnfapLP ) Run(g types.Graph) int64 {
 	lpFilename := v.createLpFile(g)
@@ -296,4 +313,59 @@ func (v *capacitatedVnfapLP) analyzeResults(results string) float64 {
 		}
 	}
 	return objectiveValue
+}
+
+
+func (v *roundCapacitatedVnfpapLp) runLp(lpFilename string) map[string]float64 {
+	cmd := exec.Command(_LP_COMMAND, lpFilename)
+	o, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	cmd.Run()
+	variableValues := v.analyzeResults(string(o))
+	os.Remove(lpFilename)
+	return variableValues
+}
+
+func (v *roundCapacitatedVnfpapLp) analyzeResults(results string) map[string]float64{
+	lines := strings.Split(results, "\n")
+	start_line := 0
+	for i, line := range lines{
+		if strings.HasPrefix(line, "Actual values"){
+			start_line = i+1
+			break
+		}
+	}
+	variableValues := map[string]float64{}
+	for lineNumber := start_line; lineNumber < len(lines)-1; lineNumber++ {
+		splittedS := strings.Fields(lines[lineNumber])
+		variableValue, _ := strconv.ParseFloat(splittedS[1], 64)
+		variable := splittedS[0]
+		variableValues[variable] = variableValue
+	}
+	return variableValues
+}
+
+func (v *roundCapacitatedVnfpapLp) createSolutionFromVariables(g types.Graph, variables map[string]float64) int64 {
+	servers := g.Servers()
+	placementFunction := map[int]int{}
+	colors := g.MaxColor()
+	for _, server := range servers {
+		colorProbability := map[int]float64{}
+		for c := 0; c < colors; c++ {
+			iVar := v.serverColorVar(server, c)
+			colorProbability[c] = variables[iVar]
+		}
+		x := rand.Float64()
+		for c, prob := range colorProbability {
+
+			x = x - prob
+			if x <= 0 {
+				placementFunction[server.Vertex()] = c
+				break
+			}
+		}
+	}
+	return impl.CalculateMaxAssignment(g, placementFunction)
 }

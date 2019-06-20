@@ -93,7 +93,9 @@ func runSettings(s setting) {
 	smartRandom := algorithm.NewSmartRandom()
 	greedy := algorithm.NewGreedy()
 	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.colors*s.servers*s.colors)
-	lpImpl := algorithm.NewCapacitatedVNFapLP()
+	lpRound := algorithm.NewRoundCapacitatedVNFapLP()
+	lpMax := algorithm.NewCapacitatedVNFapLP()
+
 
 	radius_client_loss := s.clients*s.servers-len(graphs[0].Clients())
 	results := []algResult{}
@@ -102,7 +104,8 @@ func runSettings(s setting) {
 		results = append(results, timeAlgRun(smartRandom, g))
 		results = append(results, timeAlgRun(greedy, g))
 		results = append(results, timeAlgRun(multilLinear, g))
-		results = append(results, timeAlgRun(lpImpl, g))
+		results = append(results, timeAlgRun(lpRound, g))
+		results = append(results, timeAlgRun(lpMax, g))
 	}
 
 	writeResults(s, results, radius_client_loss)
