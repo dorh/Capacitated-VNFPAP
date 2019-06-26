@@ -21,7 +21,7 @@ type setting struct {
 	connections int
 }
 
-const RESULT_DIRECTORY = "Results2"
+const RESULT_DIRECTORY = "ResultsLoad"
 
 func main() {
 
