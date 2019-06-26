@@ -34,8 +34,8 @@ func Create(servers int, clients int, colors int, connections int, radius bool, 
 	if !radius {
 		return []types.Graph{vnfapGraph}
 	}
-	r, m := findRadius(vnfapGraph, clientsNodes)
-	connectionRadius := findConnectionRadius(connections, clientsNodes, serversNodes, r, m)
+	r, m := FindRadius(vnfapGraph, clientsNodes)
+	connectionRadius := FindConnectionRadius(connections, clientsNodes, serversNodes, r, m)
 	radiusGraphEdges := getEdgesInRadius(clientsNodes, serversNodes, connectionRadius)
 	radiusGraph := impl.NewGraph(radiusGraphEdges)
 	radiusGraphClients := radiusGraph.Clients()
@@ -44,6 +44,19 @@ func Create(servers int, clients int, colors int, connections int, radius bool, 
 	vnfapGraph = impl.NewGraph(vnfapGraphEdges)
 	return []types.Graph{radiusGraph}
 }
+
+func CreateWithRadius(servers int, clients int, colors int, serverCapacity int, radius float64 ) []types.Graph {
+	if !isServerExists(servers) {
+		return nil
+	}
+	rand.Seed(time.Now().UTC().UnixNano())
+	serversNodes, boundaries := get_servers(servers, serverCapacity)
+	clientsNodes := getClientsWithinRadius(clients*servers, boundaries, colors, serversNodes, radius)
+	radiusGraphEdges := getEdgesInRadius(clientsNodes, serversNodes, radius)
+	vnfapGraph := impl.NewGraph(radiusGraphEdges)
+	return []types.Graph{vnfapGraph}
+}
+
 
 func get_servers(servers int, serverCapacity int) ([]types.Server, []float64) {
 	filename := getServersFile(servers)
@@ -102,6 +115,35 @@ func getClients(clients int, boundaries []float64, colors int, min_index int) []
 	return clients_list
 }
 
+func getClientsWithinRadius(clients int, boundaries []float64, colors int, servers []types.Server, radius float64) []types.Client {
+
+	clients_list := []types.Client{}
+	current_index := len(servers)
+
+	for i := current_index ; i < current_index + clients; i++ {
+		latitude := randFloat(boundaries[0], boundaries[1])
+		longitude := randFloat(boundaries[2], boundaries[3])
+		client_color := rand.Intn(colors)
+
+		found_server := false
+		new_client := impl.NewClient(i, client_color , longitude, latitude)
+		for _, server := range servers{
+			if new_client.Distance(server) < radius{
+				found_server = true
+			}
+		}
+
+		if found_server {
+			clients_list = append(clients_list, new_client )
+		} else{
+			i--
+		}
+
+	}
+	fmt.Println(len(clients_list), clients)
+	return clients_list
+}
+
 func randFloat(min float64, max float64) float64 {
 	return min + (max-min)*rand.Float64()
 }
@@ -140,7 +182,7 @@ func getClosestServers(client types.Client, servers []types.Server, connections 
 }
 
 
-func findConnectionRadius(connections int, clients []types.Client, servers []types.Server, minimal_radius float64,
+func FindConnectionRadius(connections int, clients []types.Client, servers []types.Server, minimal_radius float64,
 	maximal_radius float64) float64{
 	min := minimal_radius
 	max := maximal_radius
@@ -156,7 +198,7 @@ func findConnectionRadius(connections int, clients []types.Client, servers []typ
 	return (max + min)/2
 }
 
-func findRadius(graph types.Graph, clients []types.Client) (float64, float64) {
+func FindRadius(graph types.Graph, clients []types.Client) (float64, float64) {
 	minimalDistanceSum := 0.0
 	maxDist := 0.0
 	for _, client := range clients {

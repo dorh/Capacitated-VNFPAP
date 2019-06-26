@@ -21,26 +21,37 @@ type setting struct {
 	connections int
 }
 
-const RESULT_DIRECTORY = "Results"
+const RESULT_DIRECTORY = "Results2"
 
 func main() {
-	ProccesorsNumber := runtime.NumCPU() - 1
+
+	iterations := 50
+	radius_sum := float64(0.0)
+	for i:= 0; i < iterations; i++{
+		graph := graph_creator.Create(20, 2, 3, 3, false, 40)
+		r, m := graph_creator.FindRadius(graph[0], graph[0].Clients())
+		radius_sum += graph_creator.FindConnectionRadius(3, graph[0].Clients(), graph[0].Servers(), r, m)
+	}
+
+	needed_radius := radius_sum/50
+
+	ProccesorsNumber := 1//runtime.NumCPU() - 1
 	settingsChannel := make(chan setting, 0)
 	wg := sync.WaitGroup{}
 	for i := 0; i < ProccesorsNumber; i++ {
 		wg.Add(1)
 		go func() {
 			for s := range settingsChannel {
-				runSettings(s)
+				runSettingsWithRadius(s, needed_radius)
 			}
 			wg.Done()
 		}()
 	}
 
+
 	servers := []int{20}
 	clients := []int{2,3,5,10} // 2, 5,
 	colors := []int{3}//,5,10} // 5,
-	connections := []int{3,5}// 2,
 	numberOfRuns := 15
 
 	settingNumber := 0
@@ -48,8 +59,8 @@ func main() {
 	for _, i := range servers {
 		for _, c := range clients {
 			for _, col := range colors {
-				for _, con := range connections {
-					s := setting{i, c, col, con}
+				//for _, con := range connections {
+					s := setting{i, c, col, 3}
 					settingNumber += 1
 					fmt.Println(settingNumber, s)
 
@@ -57,7 +68,7 @@ func main() {
 						settingsChannel<- s
 						fmt.Println(j)
 					}
-				}
+				//}
 			}
 		}
 	}
@@ -88,6 +99,33 @@ func max(a,b int) int {
 
 func runSettings(s setting) {
 	graphs := graph_creator.Create(s.servers, s.clients, s.colors, s.connections, true, max(s.connections, s.clients))
+
+	random := algorithm.NewRandom()
+	smartRandom := algorithm.NewSmartRandom()
+	greedy := algorithm.NewGreedy()
+	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.colors*s.servers*s.colors)
+	lpRound := algorithm.NewRoundCapacitatedVNFapLP()
+	lpMax := algorithm.NewCapacitatedVNFapLP()
+
+
+	radius_client_loss := s.clients*s.servers-len(graphs[0].Clients())
+	results := []algResult{}
+	for _, g := range graphs {
+		results = append(results, timeAlgRun(random, g))
+		results = append(results, timeAlgRun(smartRandom, g))
+		results = append(results, timeAlgRun(greedy, g))
+		results = append(results, timeAlgRun(multilLinear, g))
+		results = append(results, timeAlgRun(lpRound, g))
+		results = append(results, timeAlgRun(lpMax, g))
+	}
+
+	writeResults(s, results, radius_client_loss)
+}
+
+
+
+func runSettingsWithRadius(s setting, radius float64) {
+	graphs := graph_creator.CreateWithRadius(s.servers, s.clients, s.colors, 5, radius)
 
 	random := algorithm.NewRandom()
 	smartRandom := algorithm.NewSmartRandom()
