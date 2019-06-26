@@ -77,7 +77,7 @@ func (mlc *multiLinearCalculation) findCurrentColorToServer(g types.Graph, multi
 func (mlc *multiLinearCalculation) calculateMultiLinearValue(g types.Graph, multi_linear_extension [][]float64,
 	server int, color int) int64 {
 	sum := int64(0)
-	numOfIterations := len(g.Servers())*g.MaxColor()
+	numOfIterations := len(g.Servers())*g.MaxColor()*g.MaxColor()
 	for i:=0; i< numOfIterations; i++{
 		sum += mlc.calculateOneTime(g, multi_linear_extension, server, color)
 	}

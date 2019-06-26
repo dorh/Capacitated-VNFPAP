@@ -50,8 +50,8 @@ func main() {
 
 
 	servers := []int{20}
-	clients := []int{2,3,5,10} // 2, 5,
-	colors := []int{3}//,5,10} // 5,
+	clients := []int{2,3,4,5,6,7,8,9} // 2, 5,
+	colors := []int{4}//,5,10} // 5,
 	numberOfRuns := 15
 
 	settingNumber := 0
@@ -103,7 +103,7 @@ func runSettings(s setting) {
 	random := algorithm.NewRandom()
 	smartRandom := algorithm.NewSmartRandom()
 	greedy := algorithm.NewGreedy()
-	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.colors*s.servers*s.colors)
+	multilLinear := algorithm.NewMultiLinearCalculation(s.servers*s.servers)
 	lpRound := algorithm.NewRoundCapacitatedVNFapLP()
 	lpMax := algorithm.NewCapacitatedVNFapLP()
 
